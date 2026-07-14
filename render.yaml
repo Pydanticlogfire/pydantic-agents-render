@@ -1,0 +1,127 @@
+# Reusable environment variable groups.
+#
+# `pydantic-agents-pipeline` is the single source of truth for the Q&A pipeline
+# config (LLM/Logfire secrets + thresholds + model selection). It is consumed by
+# the API gateway (which runs the pipeline in-process) and the ingest cron (which
+# embeds live sources). Both run the same `backend.config.Settings`, so linking
+# one group beats hand-pasting ~20 vars per service.
+envVarGroups:
+  - name: pydantic-agents-pipeline
+    envVars:
+      # Secrets — prompted once on first apply (no defaults in backend/config.py)
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LOGFIRE_TOKEN
+        sync: false
+      - key: LOGFIRE_READ_TOKEN
+        sync: false
+      # Pipeline configuration
+      - key: MAX_TOKENS
+        value: "2000"
+      - key: TIMEOUT_SECONDS
+        value: "30"
+      # RAG configuration
+      - key: RAG_TOP_K
+        value: "20"
+      - key: SIMILARITY_THRESHOLD
+        value: "0.3"
+      - key: VERIFICATION_THRESHOLD
+        value: "0.30"
+      - key: EMBEDDING_MODEL
+        value: text-embedding-3-small
+      - key: EMBEDDING_DIMENSIONS
+        value: "1536"
+      # Model selection
+      - key: ANSWER_MODEL
+        value: claude-sonnet-4-6
+      - key: CLAIMS_MODEL
+        value: gpt-5.4-mini
+      - key: ACCURACY_MODEL
+        value: claude-sonnet-4-6
+      - key: EVAL_MODEL_OPENAI
+        value: gpt-5.4-mini
+      - key: EVAL_MODEL_ANTHROPIC
+        value: claude-sonnet-4-6
+      - key: QUERY_EXPANSION_MODEL
+        value: gpt-4.1-nano
+      # Performance
+      - key: ENABLE_CACHING
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+
+projects:
+  - name: pydantic-agents
+    environments:
+      - name: production
+        # PostgreSQL database with pgvector extension
+        databases:
+          - name: pydantic-agents-db
+            databaseName: pydantic_agents_db
+            user: pydantic_agents_user
+            plan: basic-1gb
+            region: oregon
+            postgresMajorVersion: "17"
+
+        # Services in the production environment
+        services:
+          # Backend API (FastAPI + Logfire). The Q&A pipeline runs in-process as a
+          # background task — POST /ask launches it, GET /ask/{run_id} polls status.
+          - type: web
+            name: pydantic-agents-api
+            runtime: python
+            plan: starter
+            region: oregon
+            buildCommand: uv sync --no-dev --frozen
+            startCommand: uv run uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+            # Refresh the RAG corpus on every deploy via the consolidated, in-process
+            # ingest entrypoint (no Render Workflows). With no args it loads the core
+            # corpus then all live sources in data/sources.py: pricing, autoscaling,
+            # nodejs, workflows_docs, workflows_tutorial, tutorials_index.
+            preDeployCommand: uv run python data/scripts/ingest_pages.py
+            healthCheckPath: /health
+            envVars:
+              # Shared pipeline config + secrets
+              - fromGroup: pydantic-agents-pipeline
+              # Database connection (auto-injected from database)
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: pydantic-agents-db
+                  property: connectionString
+
+          # Ingestion refresh cron — runs the in-process ingest entrypoint on a
+          # schedule to refresh the live RAG sources (core corpus + every source).
+          - type: cron
+            name: pydantic-agents-ingest
+            runtime: python
+            plan: starter
+            region: oregon
+            schedule: "0 6 * * *"  # daily at 06:00 UTC
+            buildCommand: uv sync --no-dev --frozen
+            startCommand: uv run python data/scripts/ingest_pages.py
+            envVars:
+              # Needs the LLM keys (to embed live sources) + DB connection
+              - fromGroup: pydantic-agents-pipeline
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: pydantic-agents-db
+                  property: connectionString
+
+          # Frontend (Next.js Static Site)
+          - type: web
+            runtime: static
+            name: pydantic-agents-frontend
+            rootDir: frontend
+            buildCommand: rm -rf node_modules/.cache .next out && npm ci && npm run build
+            staticPublishPath: out
+            pullRequestPreviewsEnabled: true
+            envVars:
+              # API URL - set to the backend service's public URL after first deploy
+              - key: NEXT_PUBLIC_API_URL
+                sync: false
+            routes:
+              - type: rewrite
+                source: /*
+                destination: /index.html
