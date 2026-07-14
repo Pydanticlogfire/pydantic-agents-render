@@ -1137,7 +1137,7 @@ requires-dist = [
     { name = "pydantic-ai", specifier = ">=1.0.0" },
     { name = "pydantic-settings", specifier = ">=2.6.1" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "python-multipart", specifier = ">=0.0.12" },
+    { name = "python-multipart", specifier = ">=0.0.31" },
     { name = "sqlalchemy", specifier = ">=2.0.36" },
     { name = "tenacity", specifier = ">=9.0.0" },
     { name = "tiktoken", specifier = ">=0.8.0" },
@@ -2005,11 +2005,11 @@ wheels = [
 
 [[package]]
 name = "python-multipart"
-version = "0.0.12"
+version = "0.0.31"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/16/6e/7ecfe1366b9270f7f475c76fcfa28812493a6a1abd489b2433851a444f4f/python_multipart-0.0.12.tar.gz", hash = "sha256:045e1f98d719c1ce085ed7f7e1ef9d8ccc8c02ba02b5566d5f7521410ced58cb", size = 35713, upload-time = "2024-09-29T08:12:25.746Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/7e/9b35ad8f3d9ca680f7c87a88f19612fdd8da9796c4d3b46e560ac79dcc4a/python_multipart-0.0.31.tar.gz", hash = "sha256:fc631183bb13e56db3158a4909908dfb2e23565286744e798241e63750e5d680", size = 46689, upload-time = "2026-06-04T08:27:49.014Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/0b/c316262244abea7481f95f1e91d7575f3dfcf6455d56d1ffe9839c582eb1/python_multipart-0.0.12-py3-none-any.whl", hash = "sha256:43dcf96cf65888a9cd3423544dd0d75ac10f7aa0c3c28a175bbcd00c9ce1aebf", size = 23246, upload-time = "2024-09-29T08:12:24.451Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/1e/7f7f299527a5a8ad90acd5f2f78dfa6c8495c6301a3205106ea68a84de96/python_multipart-0.0.31-py3-none-any.whl", hash = "sha256:8408153d68a9773291fc1da39a8b85a50044bddbabd2dd72e9229776b7b15e28", size = 29996, upload-time = "2026-06-04T08:27:47.804Z" },
 ]
 
 [[package]]
