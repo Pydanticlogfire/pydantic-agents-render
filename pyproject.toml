@@ -11,7 +11,7 @@ dependencies = [
     "pydantic-settings>=2.6.1",
     "typing-extensions>=4.12.2",
     # AI & LLM
-    "pydantic-ai>=1.0.0",
+    "pydantic-ai>=1.106.0",
     "openai>=2.2.0",
     "anthropic>=0.69.0",
     "genai-prices>=0.0.67",
